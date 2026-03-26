@@ -1347,7 +1347,13 @@ function animateDiceRoll(dice){
 }
 
 function onBoardClick(e){
-  if(!gs||!isMyTurn()||gs.phase!=='moving')return;
+  function onBoardClick(index){
+  if(!gs || !isMyTurn()) return;
+
+  // FIX: eğer moving değilse zorla moving yap
+  if(gs.phase !== 'moving'){
+    gs.phase = 'moving';
+  }
   const rect=cvs.getBoundingClientRect();
   const mx=(e.clientX-rect.left)*(CW/rect.width);
   const my2=(e.clientY-rect.top)*(CH/rect.height);
