@@ -896,6 +896,13 @@ function freshGS(){
 // ══════════════════════════════════════════
 function startGame(room){
   gs=room.gs;
+  // FIX: oyun firstroll'da takılı kalırsa başlat
+if(gs.phase === 'firstroll'){
+  gs.phase = 'rolling';
+  gs.turn = 'w'; // ilk oyuncu
+  gs.dice = [];
+  gs.used = [];
+}
   if(!gs.pts) gs=freshGS();
   if(!Array.isArray(gs.pts)) gs.pts=Object.values(gs.pts);
   const isHost=room.host.uid===me.uid;
@@ -1461,7 +1468,9 @@ async function doUndo(){
   await fb.update(fb.ref(fb.db,`rooms/${roomId}/gs`),prev);
 }
 
-function isMyTurn(){return gs&&gs.turn===myColor&&gs.phase!=='gameover';}
+function isMyTurn(){
+  return gs && gs.turn === myColor && gs.phase !== 'gameover';
+}
 
 function updateHUDOverlays(){
   if(!gs) return;
