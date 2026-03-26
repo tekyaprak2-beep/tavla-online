@@ -150,7 +150,7 @@ canvas{display:block;width:100%;height:100%;}
 
 /* First roll overlay */
 .first-roll-overlay{
-  position:absolute;inset:0;background:rgba(0,0,0,0.85);
+  position:absolute;inset:0;background:rgba(0,0,0,.85);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:100;pointer-events:all;
 }
@@ -182,7 +182,7 @@ canvas{display:block;width:100%;height:100%;}
 @keyframes tout{to{opacity:0;}}
 
 /* Modal */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:800;align-items:center;justify-content:center;padding:1.5rem;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:800;align-items:center;justify-content:center;padding:1.5rem;}
 .modal-bg.show{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem;max-width:320px;width:100%;text-align:center;}
 .modal h2{font-family:'Cinzel',serif;color:var(--gold);font-size:1.3rem;margin-bottom:.5rem;}
@@ -294,7 +294,7 @@ input[type=text]{font-size:16px!important;}
     </div>
     <div class="tab-panel" id="tab-stats">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem;">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);" id="st-wins">0</div><div style="font-size:.65rem;color:var(--dim);margin-top:.2rem;">GALİŞ</div></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);" id="st-wins">0</div><div style="font-size:.65rem;color:var(--dim);margin-top:.2rem;">GALİBİYET</div></div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);" id="st-losses">0</div><div style="font-size:.65rem;color:var(--dim);margin-top:.2rem;">YENİLGİ</div></div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);" id="st-rate">—</div><div style="font-size:.65rem;color:var(--dim);margin-top:.2rem;">KAZANMA %</div></div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);" id="st-games">0</div><div style="font-size:.65rem;color:var(--dim);margin-top:.2rem;">TOPLAM</div></div>
@@ -1406,12 +1406,6 @@ function canBearOff(color,g){
   } return true;
 }
 
-function noHigher(color,from,g){
-  if(color==='w'){for(let i=from+1;i<=24;i++){const pt=g.pts[i];if(pt&&pt.c==='w'&&pt.n>0)return false;}}
-  else{for(let i=from-1;i>=1;i--){const pt=g.pts[i];if(pt&&pt.c==='b'&&pt.n>0)return false;}}
-  return true;
-}
-
 function getDie(from,to,g){
   const color=g.turn, dice=remDice(g);
   let dist=0;
@@ -1448,11 +1442,6 @@ async function doMove(from,to){
   await fb.update(fb.ref(fb.db,`rooms/${roomId}/gs`),g);
 }
 
-function hasAnyMove(color,g){
-  const d=remDice(g); if(d.length===0) return false;
-  return true;
-}
-
 async function doRoll(){
   if(!isMyTurn()||gs.phase!=='rolling')return;
   const d1=Math.ceil(Math.random()*6), d2=Math.ceil(Math.random()*6);
@@ -1475,9 +1464,9 @@ async function doUndo(){
 function isMyTurn(){return gs&&gs.turn===myColor&&gs.phase!=='gameover';}
 
 function updateHUDOverlays(){
+  if(!gs) return;
   const fr=gs.phase==='firstroll';
   document.getElementById('btn-roll').style.display=(!fr&&isMyTurn()&&gs.phase==='rolling')?'block':'none';
-  document.getElementById('btn-undo').style.display=(!fr&&isMyTurn()&&undoStack.length>0)?'block':'none';
 }
 
 function updateHUD(){
@@ -1508,56 +1497,128 @@ function updateScoreDisplay(){
   document.getElementById('top-score').textContent=(scores[myColor==='w'?'b':'w']||0)+'/'+matchTarget;
 }
 
-async function onGameOver(winner){
-  const iWon=winner===myColor; scores[winner]++;
-  await fb.update(fb.ref(fb.db,`rooms/${roomId}/scores`),scores);
-  showModal(iWon?'🏆 Kazandın!':'😔 Kaybettin','Skor: '+scores['w']+'-'+scores['b'],[{text:'Lobi',fn:()=>{show('s-lobby');}}]);
+// ── Tabs ──
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='stats') loadStats();
+  if(name==='friends') loadFriends();
 }
 
-async function startNextHand(){
-  const newGs={...freshGS(),phase:'firstroll',turnStart:Date.now()};
-  await fb.update(fb.ref(fb.db,`rooms/${roomId}/gs`),newGs);
+// ── Friends & Stats ──
+async function sendFriendRequest(){
+  const inp=document.getElementById('inp-add-friend'); const name=inp.value.trim();
+  if(!name) return;
+  try {
+    const snap = await fb.get(fb.ref(fb.db, 'usernames/' + name.toLowerCase()));
+    if(snap.exists()){
+      const targetUid = snap.val();
+      await fb.set(fb.ref(fb.db, `users/${targetUid}/friendRequests/${me.uid}`), {from: me.uid, name: me.name, ts: Date.now()});
+      toast('İstek gönderildi'); inp.value='';
+    } else { toast('Kullanıcı bulunamadı', true); }
+  } catch(e) { console.error(e); }
+}
+
+function loadFriends(){
+  fb.onValue(fb.ref(fb.db, 'users/' + me.uid), snap => {
+    const d = snap.val(); if(!d) return;
+    renderFRs(d.friendRequests || {});
+    renderFriends(d.friends || {});
+  });
+}
+
+function renderFRs(reqs){
+  const sec=document.getElementById('freq-section'); const list=document.getElementById('freq-list');
+  const badge=document.getElementById('freq-badge'); const keys=Object.keys(reqs);
+  if(!keys.length){ sec.style.display='none'; badge.style.display='none'; return; }
+  sec.style.display='block'; badge.style.display='inline'; badge.textContent=keys.length;
+  list.innerHTML=keys.map(uid=>`<div class="friend-card"><span>${reqs[uid].name}</span><div class="friend-actions"><button class="icon-btn accept" onclick="acceptFR('${uid}','${reqs[uid].name}')">✓</button></div></div>`).join('');
+}
+
+async function acceptFR(uid, name){
+  await fb.update(fb.ref(fb.db, `users/${me.uid}/friends/${uid}`), {name, since: Date.now()});
+  await fb.update(fb.ref(fb.db, `users/${uid}/friends/${me.uid}`), {name: me.name, since: Date.now()});
+  await fb.remove(fb.ref(fb.db, `users/${me.uid}/friendRequests/${uid}`));
+  toast(name+' eklendi');
+}
+
+function renderFriends(friends){
+  const list=document.getElementById('friends-list'); const keys=Object.keys(friends);
+  if(!keys.length){ list.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--dim);">Henüz arkadaş yok.</div>'; return; }
+  list.innerHTML=keys.map(uid=>`<div class="friend-card"><span>${friends[uid].name}</span><button class="icon-btn invite" onclick="inviteFriend('${uid}','${friends[uid].name}')">🎲</button></div>`).join('');
+}
+
+async function loadStats(){
+  const snap = await fb.get(fb.ref(fb.db, 'users/' + me.uid));
+  if(snap.exists()){
+    const d = snap.val();
+    document.getElementById('st-wins').textContent = d.wins || 0;
+    document.getElementById('st-losses').textContent = d.losses || 0;
+    const total = (d.wins || 0) + (d.losses || 0);
+    document.getElementById('st-games').textContent = total;
+    document.getElementById('st-rate').textContent = total > 0 ? Math.round((d.wins/total)*100) + '%' : '—';
+  }
+}
+
+async function onGameOver(winner){
+  const iWon = winner === myColor;
+  scores[winner]++;
+  await fb.update(fb.ref(fb.db, `users/${me.uid}`), { wins: (me.wins || 0) + (iWon?1:0), losses: (me.losses || 0) + (iWon?0:1) });
+  showModal(iWon?'🏆 Kazandın!':'😔 Kaybettin', 'Oyun bitti.', [{text:'Lobi', fn:()=>{location.reload();}}]);
+}
+
+function onLoggedIn(){
+  document.getElementById('lob-av').textContent=me.name[0].toUpperCase();
+  document.getElementById('lob-name').textContent=me.name;
+  show('s-lobby');
+  fb.set(fb.ref(fb.db, 'usernames/' + me.name.toLowerCase()), me.uid);
 }
 
 function listenChat(){
-  fb.onValue(fb.ref(fb.db,`rooms/${roomId}/chat`),snap=>{
-    const data=snap.val(); if(!data)return;
+  fb.onValue(fb.ref(fb.db, `rooms/${roomId}/chat`), snap => {
+    const d=snap.val(); if(!d) return;
     const el=document.getElementById('chat-msgs'); el.innerHTML='';
-    Object.values(data).sort((a,b)=>a.ts-b.ts).forEach(m=>{
-      const d=document.createElement('div'); d.className='cmsg'+(m.sys?' sys':'');
-      d.innerHTML=m.sys?m.text:`<span class="cn">${esc(m.name)}:</span>${esc(m.text)}`;
+    Object.values(d).sort((a,b)=>a.ts-b.ts).forEach(m => {
+      const d = document.createElement('div'); d.className='cmsg'+(m.sys?' sys':'');
+      d.innerHTML = m.sys ? m.text : `<span class="cn">${esc(m.name)}:</span>${esc(m.text)}`;
       el.appendChild(d);
     });
-    el.scrollTop=el.scrollHeight;
+    el.scrollTop = el.scrollHeight;
   });
 }
-async function sendMsg(){
-  const inp=document.getElementById('chat-in'), txt=inp.value.trim(); if(!txt)return;
-  inp.value=''; await fb.push(fb.ref(fb.db,`rooms/${roomId}/chat`),{name:me.name,text:txt,ts:Date.now()});
-}
-async function sysMsg(text){
-  if(roomId) await fb.push(fb.ref(fb.db,`rooms/${roomId}/chat`),{text,ts:Date.now(),sys:true});
-}
-function toggleChat(){ chatOpen=!chatOpen; document.getElementById('chat').classList.toggle('collapsed',!chatOpen); }
 
-function showMenu(){ showModal('Menü','',[{text:'Çıkış',fn:()=>{show('s-lobby');}},{text:'Kapat',fn:hideModal}]); }
-function showModal(title,text,btns){
+async function sendMsg(){
+  const inp=document.getElementById('chat-in'), txt=inp.value.trim(); if(!txt) return;
+  inp.value=''; await fb.push(fb.ref(fb.db,`rooms/${roomId}/chat`), {name:me.name, text:txt, ts:Date.now()});
+}
+
+async function sysMsg(text){
+  if(roomId) await fb.push(fb.ref(fb.db,`rooms/${roomId}/chat`), {text: text.includes('vurdu') ? 'Nee diyosun yaaaa 💥' : text, ts: Date.now(), sys: true});
+}
+
+function toggleChat(){ chatOpen=!chatOpen; document.getElementById('chat').classList.toggle('collapsed', !chatOpen); }
+function showMenu(){ showModal('Menü', '', [{text:'Lobi', fn:()=>location.reload()}, {text:'Kapat', fn:hideModal}]); }
+function showModal(title, text, btns){
   document.getElementById('m-title').textContent=title; document.getElementById('m-text').textContent=text;
   const c=document.getElementById('m-btns'); c.innerHTML='';
   btns.forEach(b=>{ const btn=document.createElement('button'); btn.className='btn btn-gold'; btn.textContent=b.text; btn.onclick=b.fn; c.appendChild(btn); });
   document.getElementById('modal').classList.add('show');
 }
-function hideModal(){ document.getElementById('modal').classList.remove('show');}
-function toast(msg,err=false){
-  const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.textContent=msg;
-  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),2800);
-}
+function hideModal(){ document.getElementById('modal').classList.remove('show'); }
+function toast(msg, err=false){ const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.textContent=msg; document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),2800); }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function onLoggedIn(){
-  document.getElementById('lob-av').textContent=me.name[0].toUpperCase(); document.getElementById('lob-name').textContent=me.name;
-  show('s-lobby');
-}
+// Floating hearts init
+(function(){
+  const container=document.getElementById('hearts-bg'); if(!container)return;
+  const emojis=['♥','♡','💕','💖','💗'];
+  for(let i=0;i<18;i++){
+    const h=document.createElement('div'); h.className='heart';
+    h.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    h.style.left=Math.random()*100+'%'; h.style.animationDuration=(4+Math.random()*6)+'s';
+    h.style.animationDelay=(Math.random()*6)+'s'; container.appendChild(h);
+  }
+})();
 </script>
 </body>
 </html>
