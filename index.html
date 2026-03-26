@@ -2060,10 +2060,16 @@ function calcPoints(winner,g){
 }
 
 // ── Vurma mesajı ──
-const _origSysMsg=sysMsg;
+// DOĞRU KISIM (Bunu kopyala ve eskisiyle değiştir)
 async function sysMsg(text){
-  const t2=text==='Sen vurdu! 💥'?'Nee diyosun yaaaa 💥':text;
-  await _origSysMsg(t2);
+  if(!roomId) return;
+  // Naz için özel vuruş mesajı
+  const t2 = text.includes('vurdu') ? 'Nee diyosun yaaaa 💥' : text;
+  await fb.push(fb.ref(fb.db,`rooms/${roomId}/chat`), {
+    text: t2, 
+    ts: Date.now(), 
+    sys: true 
+  });
 }
 
 // ── Game Over puanlama ──
