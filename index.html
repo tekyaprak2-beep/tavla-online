@@ -1470,26 +1470,6 @@ function updateDiceOverlay() {
 }
 
 
-  // Eğer atılmış zar varsa 3D overlay'i göster
-  if (gs.dice && gs.dice.length > 0) {
-    overlay.style.display = 'flex';
-    const used = [...(gs.used || [])];
-    const usedCopy = [...used];
-    
-    stage.innerHTML = gs.dice.map((val, i) => {
-      const idx = usedCopy.indexOf(val);
-      let isUsed = false;
-      if (idx !== -1) {
-        usedCopy.splice(idx, 1);
-        isUsed = true;
-      }
-      return makeDie3D(val, isUsed, i);
-    }).join('');
-  } else {
-    overlay.style.display = 'none';
-  }
-}
-
 function animateDiceRoll(dice){
   playDiceSound();
   // Add rolling class briefly
