@@ -355,9 +355,7 @@ input[type=text]{font-size:16px!important;}
         <div id="fr-result" style="font-family:Cinzel,serif;font-size:.9rem;color:var(--dim);margin-bottom:1.5rem;text-align:center;min-height:1.2em;"></div>
         <button id="fr-btn" class="btn btn-gold" style="width:160px;" onclick="doFirstRoll()">🎲 Zar At</button>
       </div>
-      <div class="controls" id="controls">
-        <button class="cbtn" onclick="showMenu()">☰ Menü</button>
-      </div>
+      
 
       <!-- 3D Dice overlay (shown during normal play) -->
       <div class="dice-overlay" id="dice-overlay" style="display:none;">
@@ -383,11 +381,12 @@ input[type=text]{font-size:16px!important;}
         <span class="pname" id="bot-name">Sen</span>
         <span class="ppip" id="bot-pip"></span>
       </div>
-      <div class="pbar-right">
-        <button class="cbtn primary" id="btn-roll" onclick="doRoll()" style="display:none;margin:0;padding:.25rem .5rem;font-size:.72rem;">🎲 Zar At</button>
-        <button class="cbtn" id="btn-undo" onclick="doUndo()" style="display:none;margin:0;padding:.25rem .5rem;font-size:.72rem;">↩</button>
-        <span class="score-badge" id="bot-score">0</span>
-        <button onclick="toggleMusic()" id="music-btn" style="background:none;border:1px solid var(--border);border-radius:20px;padding:.2rem .6rem;color:var(--gold);font-size:.85rem;cursor:pointer;line-height:1;">🎵</button>
+     <div class="pbar-right">
+    <button class="cbtn" onclick="showMenu()" style="margin-right: 8px; padding: .2rem .5rem;">☰ Menü</button>
+    <span class="score-badge" id="bot-score">0</span>
+    <button onclick="toggleMusic()" id="music-btn" style="background:none;border:1px solid var(--border);border-radius:20px;padding:.2rem .6rem;color:var(--gold);font-size:.85rem;cursor:pointer;line-height:1;margin-left: 8px;">🎵</button>
+    <div class="timer" id="bot-timer">—</div>
+</div>
         <div class="timer" id="bot-timer">—</div>
       </div>
     </div>
