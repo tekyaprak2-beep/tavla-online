@@ -1339,16 +1339,16 @@ function drawDiceOnBoard(l){
     const isSel=!isUsed[i]&&selectedDie===val;
     ctx.globalAlpha=alpha;
     if(isSel){ctx.shadowColor='rgba(255,220,50,0.9)';ctx.shadowBlur=10;}
-    ctx.fillStyle='rgba(0,0,0,0.5)';rr2(x+2,y+3,dieSize,dieSize,5);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.5)';rr(x+2,y+3,dieSize,dieSize,5);ctx.fill();
     const grad=ctx.createLinearGradient(x,y,x+dieSize,y+dieSize);
     if(isSel){grad.addColorStop(0,'#fff0a0');grad.addColorStop(.5,'#f0c800');grad.addColorStop(1,'#c09000');}
     else{grad.addColorStop(0,'#e8d090');grad.addColorStop(.5,'#c8a040');grad.addColorStop(1,'#a07820');}
-    rr2(x,y,dieSize,dieSize,5);ctx.fillStyle=grad;ctx.fill();
+    rr(x,y,dieSize,dieSize,5);ctx.fillStyle=grad;ctx.fill();
     ctx.shadowBlur=0;
     const hiGrad=ctx.createLinearGradient(x,y,x,y+dieSize*.4);
     hiGrad.addColorStop(0,'rgba(255,240,180,0.5)');hiGrad.addColorStop(1,'rgba(255,255,255,0)');
-    rr2(x,y,dieSize,dieSize*.5,5);ctx.fillStyle=hiGrad;ctx.fill();
-    rr2(x,y,dieSize,dieSize,5);
+    rr(x,y,dieSize,dieSize*.5,5);ctx.fillStyle=hiGrad;ctx.fill();
+    rr(x,y,dieSize,dieSize,5);
     ctx.strokeStyle=isSel?'#ffe040':isUsed[i]?'#5a3a10':'#f0c040';
     ctx.lineWidth=isSel?2.5:1.5;ctx.stroke();
     drawDieDots(x,y,dieSize,val,isUsed[i]);
@@ -1405,19 +1405,39 @@ function makeDie3D(val,used,idx){
   return `<div class="die3d-wrap"><div class="die3d${used?' used':''}" id="die3d-${idx}">${face}</div></div>`;
 }
 
-function updateDiceOverlay(){
-  if(!gs)return;
-  const frOverlay=document.getElementById('fr-overlay');
-  const overlay=document.getElementById('dice-overlay');
-  overlay.style.display='none'; // we draw dice on canvas now
+function updateDiceOverlay() {
+  if (!gs) return;
+  const frOverlay = document.getElementById('fr-overlay');
+  const overlay = document.getElementById('dice-overlay');
+  const stage = document.getElementById('dice-stage');
 
-  if(gs.phase==='firstroll'){
-    frOverlay.style.display='flex';
+  if (gs.phase === 'firstroll') {
+    frOverlay.style.display = 'flex';
+    overlay.style.display = 'none';
     showFirstRollOverlay();
     return;
   }
-  frOverlay.style.display='none';
-  // Dice are drawn directly on canvas in drawDiceOnBoard()
+
+  frOverlay.style.display = 'none';
+
+  // Eğer atılmış zar varsa 3D overlay'i göster
+  if (gs.dice && gs.dice.length > 0) {
+    overlay.style.display = 'flex';
+    const used = [...(gs.used || [])];
+    const usedCopy = [...used];
+    
+    stage.innerHTML = gs.dice.map((val, i) => {
+      const idx = usedCopy.indexOf(val);
+      let isUsed = false;
+      if (idx !== -1) {
+        usedCopy.splice(idx, 1);
+        isUsed = true;
+      }
+      return makeDie3D(val, isUsed, i);
+    }).join('');
+  } else {
+    overlay.style.display = 'none';
+  }
 }
 
 function animateDiceRoll(dice){
