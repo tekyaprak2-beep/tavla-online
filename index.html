@@ -2272,30 +2272,30 @@ function onLoggedIn(){
     const lobAv = document.getElementById('lob-av');
     const lobName = document.getElementById('lob-name');
     
-    if(lobAv) lobAv.textContent = me.name[0].toUpperCase();
-    if(lobName) lobName.textContent = me.name;
+    if(lobAv && me) lobAv.textContent = me.name[0].toUpperCase();
+    if(lobName && me) lobName.textContent = me.name;
     
     const lbl = document.getElementById('current-theme-name');
     if(lbl) {
-      const theme = THEMES[currentTheme] || THEMES.ahsap;
+      const theme = (typeof THEMES !== 'undefined') ? (THEMES[currentTheme] || THEMES.ahsap) : {emoji:'🎲', name:'Ahşap'};
       lbl.textContent = theme.emoji + ' ' + theme.name;
     }
     
     show('s-lobby');
-    setPresence('online');
-    loadFriends();
-    listenInvites();
+    if (typeof setPresence === 'function') setPresence('online');
+    if (typeof loadFriends === 'function') loadFriends();
+    if (typeof listenInvites === 'function') listenInvites();
     
-    // Kullanıcı adını Firebase'e kaydet (Hata alsa da girişi engellemez)
     if(fb && me) {
       fb.set(fb.ref(fb.db, 'usernames/' + me.name.toLowerCase()), me.uid).catch(()=>{});
     }
   } catch (e) {
     console.error("Giriş hatası:", e);
-    show('s-lobby'); // Hata olsa bile lobiye girmeye çalış
+    show('s-lobby'); 
   }
-}
+} // Fonksiyon burada biter.
 
+// Sayfanın en sonunda sadece bir tane </script> olduğundan emin ol.
 </script>
 </body>
 </html>
