@@ -381,8 +381,13 @@ input[type=text]{font-size:16px!important;}
         <span class="pname" id="bot-name">Sen</span>
         <span class="ppip" id="bot-pip"></span>
       </div>
-     <div class="pbar-right">
+    <div class="pbar-right">
+    <button class="cbtn primary" id="btn-roll" onclick="doRoll()" style="display:none; margin-right: 5px; padding:.25rem .5rem; font-size:.72rem;">🎲 Zar At</button>
+    
+    <button class="cbtn" id="btn-undo" onclick="doUndo()" style="display:none; margin-right: 5px; padding:.25rem .5rem; font-size:.72rem;">↩</button>
+    
     <button class="cbtn" onclick="showMenu()" style="margin-right: 8px; padding: .2rem .5rem;">☰ Menü</button>
+    
     <span class="score-badge" id="bot-score">0</span>
     <button onclick="toggleMusic()" id="music-btn" style="background:none;border:1px solid var(--border);border-radius:20px;padding:.2rem .6rem;color:var(--gold);font-size:.85rem;cursor:pointer;line-height:1;margin-left: 8px;">🎵</button>
     <div class="timer" id="bot-timer">—</div>
