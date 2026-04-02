@@ -142,7 +142,17 @@ canvas{display:block;width:100%;height:100%;}
 .dot.h{background:transparent;}
 
 /* Controls */
-.controls{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:.4rem;pointer-events:all;}
+/* Yeni (Güncellenmiş) Kod */
+.controls {
+  position: absolute;
+  right: 10px;
+  top: 10px; /* Aşağıdan yukarıya taşıdık */
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  pointer-events: all;
+  z-index: 100; /* Taşların üstünde kalmasını sağlar */
+}
 .cbtn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-family:'Cinzel',serif;font-size:.7rem;color:var(--text);cursor:pointer;white-space:nowrap;transition:all .15s;}
 .cbtn:hover{border-color:var(--gold);color:var(--gold);}
 .cbtn.primary{background:linear-gradient(135deg,#a07020,var(--gold));color:#0d0700;border-color:var(--gold);}
