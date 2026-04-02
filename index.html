@@ -1031,45 +1031,59 @@ function makeSingleDie(val, id){
 }
 
 async function doFirstRoll(){
-  if(!gs||gs.phase!=='firstroll')return;
-  const fr=gs.firstRolls||{};
-  // Check if tie — both need to reroll
-  const oppColor=myColor==='w'?'b':'w';
-  const isTie=fr[myColor]!=null&&fr[oppColor]!=null&&fr[myColor]===fr[oppColor];
-  const myVal=Math.ceil(Math.random()*6);
+  if(!gs || gs.phase !== 'firstroll') return;
+  
+  const fr = gs.firstRolls || {};
+  const oppColor = myColor === 'w' ? 'b' : 'w';
+  
+  // Eğer zaten zar atmışsak ve rakip henüz atmamışsa (beraberlik durumu hariç) bekleyelim
+  if(fr[myColor] != null && fr[oppColor] == null) return;
+
+  const myVal = Math.ceil(Math.random() * 6);
   playDiceSound();
-  // Animate the die
-  const dieEl=document.getElementById('my-fr-die');
-  if(dieEl){dieEl.style.transform='scale(1.3)';setTimeout(()=>dieEl.style.transform='',200);}
-  const newFr = isTie ? {[myColor]:myVal} : {...fr,[myColor]:myVal};
-  if(isTie){
-    // Reset both
-    newFr[oppColor]=null;
-    delete newFr[oppColor];
+
+  // Zar sallama animasyonu
+  const dieEl = document.getElementById('my-fr-die');
+  if(dieEl){ dieEl.style.transform = 'scale(1.3)'; setTimeout(() => dieEl.style.transform = '', 200); }
+
+  // YENİ VERİ: Kendi attığımız zarı ekliyoruz
+  const updatedFr = { ...fr, [myColor]: myVal };
+
+  // Eğer bu bir "beraberlik sonrası tekrar atış" ise eski zarları temizleyelim
+  if (fr[myColor] != null && fr[oppColor] != null && fr[myColor] === fr[oppColor]) {
+    updatedFr[oppColor] = null;
+    delete updatedFr[oppColor];
   }
-  await fb.update(fb.ref(fb.db,`rooms/${roomId}/gs`),{firstRolls:newFr});
-  // Check if both rolled
-  const oppRoll=isTie?null:fr[oppColor];
-  if(oppRoll!=null&&!isTie){
-    // Determine winner
-    let winner;
-    if(myVal>oppRoll) winner=myColor;
-    else if(oppRoll>myVal) winner=myColor==='w'?'b':'w';
-    else winner=null; // tie handled above
-    if(winner){
-      setTimeout(async()=>{
-        const initDice=isTie?[]:[myVal,oppRoll].sort((a,b)=>b-a); // winner's dice = both values
-        // The winner starts with those two dice values
-        const winDice = winner==='w'?(myColor==='w'?[myVal,oppRoll]:[oppRoll,myVal])
-                                    :(myColor==='b'?[myVal,oppRoll]:[oppRoll,myVal]);
-        // Actually: the winner plays with the two first-roll dice
-        const d1=winner===myColor?myVal:oppRoll;
-        const d2=winner===myColor?oppRoll:myVal;
-        const startDice=d1===d2?[d1,d1,d1,d1]:[d1,d2];
-        await fb.update(fb.ref(fb.db,`rooms/${roomId}/gs`),{
-          phase:'rolling',turn:winner,dice:[],used:[],firstRolls:newFr,turnStart:Date.now()
+
+  // Veritabanını hemen güncelleyelim
+  await fb.update(fb.ref(fb.db, `rooms/${roomId}/gs`), { firstRolls: updatedFr });
+
+  // Rakibin zarını "güncel" veriden kontrol edelim
+  const oppRoll = updatedFr[oppColor];
+
+  if (oppRoll != null) {
+    if (myVal === oppRoll) {
+      // BERABERLİK: Ekran 1.5 saniye kalsın, sonra oyuncular tekrar atabilsin diye veriyi temizle
+      toast("Berabere! Tekrar atın.");
+      setTimeout(async () => {
+        // Sadece zarları temizle ama phase 'firstroll' kalsın
+        await fb.update(fb.ref(fb.db, `rooms/${roomId}/gs`), { firstRolls: {} });
+      }, 1500);
+    } else {
+      // KAZANAN BELLİ: 1.5 saniye bekle ve asıl oyuna geç
+      const winner = myVal > oppRoll ? myColor : oppColor;
+      
+      setTimeout(async () => {
+        await fb.update(fb.ref(fb.db, `rooms/${roomId}/gs`), {
+          phase: 'rolling', // ARTIK OYUN BAŞLADI
+          turn: winner,
+          dice: [],
+          used: [],
+          turnStart: Date.now()
         });
-      },1500);
+        // Not: updateDiceOverlay fonksiyonun artık bu phase değişimini görüp
+        // o siyah ekranı otomatik kapatacaktır.
+      }, 1500);
     }
   }
 }
@@ -1424,20 +1438,19 @@ function updateDiceOverlay() {
   const overlay = document.getElementById('dice-overlay');
   const stage = document.getElementById('dice-stage');
 
-  // EĞER İLK ATIŞ AŞAMASINDAYSAK
-  if (gs.phase === 'firstroll') {
-    frOverlay.style.display = 'flex';
+  // 1. ADIM: EĞER OYUN ARTIK BAŞLANGIÇ AŞAMASINDA DEĞİLSE SİYAH EKRANI KAPAT
+  if (gs.phase !== 'firstroll') {
+    if (frOverlay) frOverlay.style.display = 'none';
+  } else {
+    // Eğer hala ilk atış aşamasındaysak ekranı göster
+    if (frOverlay) frOverlay.style.display = 'flex';
     overlay.style.display = 'none';
     showFirstRollOverlay();
-    return;
-  } 
+    return; // İlk atış ekranı varken alttaki normal zarları çizme
+  }
 
-  // EĞER OYUN BAŞLADIYSA (Aşama firstroll değilse)
-  // Bu satır başlangıç ekranını kesin olarak kapatır:
-  frOverlay.style.display = 'none'; 
-
-  // Normal oyun zarlarını göster
-  if (gs.dice && gs.dice.length > 0) {
+  // 2. ADIM: NORMAL OYUN ZARLARINI GÖSTER
+  if (gs.dice && gs.dice.length > 0 && gs.phase !== 'gameover') {
     overlay.style.display = 'flex';
     const used = [...(gs.used || [])];
     const usedCopy = [...used];
