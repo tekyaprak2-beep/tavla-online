@@ -1424,12 +1424,37 @@ function updateDiceOverlay() {
   const overlay = document.getElementById('dice-overlay');
   const stage = document.getElementById('dice-stage');
 
+  // EĞER İLK ATIŞ AŞAMASINDAYSAK
   if (gs.phase === 'firstroll') {
     frOverlay.style.display = 'flex';
     overlay.style.display = 'none';
     showFirstRollOverlay();
     return;
+  } 
+
+  // EĞER OYUN BAŞLADIYSA (Aşama firstroll değilse)
+  // Bu satır başlangıç ekranını kesin olarak kapatır:
+  frOverlay.style.display = 'none'; 
+
+  // Normal oyun zarlarını göster
+  if (gs.dice && gs.dice.length > 0) {
+    overlay.style.display = 'flex';
+    const used = [...(gs.used || [])];
+    const usedCopy = [...used];
+    
+    stage.innerHTML = gs.dice.map((val, i) => {
+      const idx = usedCopy.indexOf(val);
+      let isUsed = false;
+      if (idx !== -1) {
+        usedCopy.splice(idx, 1);
+        isUsed = true;
+      }
+      return makeDie3D(val, isUsed, i);
+    }).join('');
+  } else {
+    overlay.style.display = 'none';
   }
+}
 
 
   // Eğer atılmış zar varsa 3D overlay'i göster
