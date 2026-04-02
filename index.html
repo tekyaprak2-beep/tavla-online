@@ -105,7 +105,7 @@ input[type=text]::placeholder{color:var(--dim);}
 canvas{display:block;width:100%;height:100%;}
 
 /* 3D DICE */
-.dice-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.dice-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;z-index: 1000; /* Bu satır zarları her şeyin en üstüne çıkarır */}
 .dice-stage{display:flex;gap:16px;pointer-events:all;}
 .die3d-wrap{perspective:120px;}
 .die3d{
@@ -961,7 +961,6 @@ function startGame(room){
 // ══════════════════════════════════════════
 function showFirstRollOverlay(){
   const overlay=document.getElementById('fr-overlay');
-  overlay.style.display='flex';
   const fr=gs.firstRolls||{};
   const myRoll=fr[myColor];
   const oppColor=myColor==='w'?'b':'w';
@@ -1432,7 +1431,6 @@ function updateDiceOverlay() {
     return;
   }
 
-  frOverlay.style.display = 'none';
 
   // Eğer atılmış zar varsa 3D overlay'i göster
   if (gs.dice && gs.dice.length > 0) {
